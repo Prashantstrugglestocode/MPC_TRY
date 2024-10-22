@@ -2,7 +2,6 @@ import numpy as np
 
 class FairnessComputation:
     def __init__(self, num_seekers, num_categories):
-        # Number of job seekers (N) and number of categories (K)
         self.num_seekers = num_seekers
         self.num_categories = num_categories
         self.SV = np.zeros((num_seekers, num_categories))  # sensitive values (one-hot encoded)
@@ -12,43 +11,26 @@ class FairnessComputation:
         self.V_MO = np.zeros((num_seekers, num_categories))  # for MO
 
     def data_donation(self, SV):
-        """
-        Store sensitive values (SV) from job seekers, encoded in one-hot format.
-        SV is a numpy array of shape (num_seekers, num_categories).
-        """
         self.SV = SV
 
     def generate_V_values(self):
-        """
-        Generate V_TTR and V_MO by adding random secrets to the sensitive values.
-        """
         for i in range(self.num_seekers):
             self.V_TTR[i] = self.SV[i] + self.RS[i]
-            self.V_MO[i] = self.SV[i] + self.RS[i]
+            self.V_MO[i] = self.SV[i] - self.RS[i]
     
     def reconstruct_SV(self):
         """
-        Reconstruct the sensitive values using V_TTR and V_MO.
+        Reconstruct the sensitive values using both V_TTR and V_MO.
         """
-        reconstructed_SV = np.zeros_like(self.SV)
-        for i in range(self.num_seekers):
-            reconstructed_SV[i] = self.V_TTR[i] - self.RS[i]  # Remove RS to get back original SV
+        reconstructed_SV = (self.V_TTR + self.V_MO) / 2  # Average to cancel out RS
         return reconstructed_SV
     
     def calculate_diversity(self, category_k):
-        """
-        Calculate the diversity (DIV) for a particular category k.
-        DIV = sum(SV_i == k) / N
-        """
         category_data = self.SV[:, category_k]  # Extract category k data
         diversity = np.sum(category_data) / self.num_seekers
         return diversity
 
     def calculate_expectation(self, weights):
-        """
-        Calculate expectation (EXP), weighted by some weights (e.g., importance of categories).
-        EXP = sum(SV_i == k) * weights_i
-        """
         expectation = 0
         for i in range(self.num_seekers):
             for k in range(self.num_categories):
@@ -57,8 +39,6 @@ class FairnessComputation:
         return expectation
 
 # Example usage:
-
-# Number of job seekers and categories
 num_seekers = 3
 num_categories = 3
 
