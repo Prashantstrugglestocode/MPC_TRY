@@ -11,9 +11,15 @@ class FairnessComputation:
         self.V_MO = np.zeros((num_seekers, num_categories))  # for MO
 
     def data_donation(self, SV):
+        """
+        Store sensitive values (SV) from job seekers, encoded in one-hot format.
+        """
         self.SV = SV
 
     def generate_V_values(self):
+        """
+        Generate V_TTR and V_MO by adding random secrets to the sensitive values.
+        """
         for i in range(self.num_seekers):
             self.V_TTR[i] = self.SV[i] + self.RS[i]
             self.V_MO[i] = self.SV[i] - self.RS[i]
@@ -24,21 +30,36 @@ class FairnessComputation:
         """
         reconstructed_SV = (self.V_TTR + self.V_MO) / 2  # Average to cancel out RS
         return reconstructed_SV
+
+    def calculate_sums(self):
+        """
+        Calculate the sum of V_TTR and V_MO for all job seekers.
+        """
+        sum_ttr = np.sum(self.V_TTR)
+        sum_mo = np.sum(self.V_MO)
+        return sum_ttr, sum_mo
     
-    def calculate_diversity(self, category_k):
-        category_data = self.SV[:, category_k]  # Extract category k data
-        diversity = np.sum(category_data) / self.num_seekers
+    def calculate_diversity(self):
+        """
+        Calculate diversity (DIV) as (sum_ttr + sum_mo) / num_seekers.
+        """
+        sum_ttr, sum_mo = self.calculate_sums()
+        diversity = (sum_ttr + sum_mo) / self.num_seekers
         return diversity
 
     def calculate_expectation(self, weights):
+        """
+        Calculate expectation (EXP), weighted by some weights (e.g., importance of categories),
+        based on the sum of V_TTR and V_MO.
+        """
+        sum_ttr, sum_mo = self.calculate_sums()
         expectation = 0
-        for i in range(self.num_seekers):
-            for k in range(self.num_categories):
-                if self.SV[i, k] == 1:  # If the SV is in this category
-                    expectation += weights[k]
-        return expectation
+        for k in range(self.num_categories):
+            expectation += (sum_ttr + sum_mo) * weights[k]
+        return expectation / self.num_seekers
 
 # Example usage:
+
 num_seekers = 3
 num_categories = 3
 
@@ -63,9 +84,9 @@ reconstructed_SV = fairness.reconstruct_SV()
 print("Reconstructed Sensitive Values (SV):")
 print(reconstructed_SV)
 
-# Calculate diversity for category 0
-div_category_0 = fairness.calculate_diversity(category_k=0)
-print(f"Diversity for category 0: {div_category_0}")
+# Calculate diversity using sum-based retrieval
+diversity = fairness.calculate_diversity()
+print(f"Diversity: {diversity}")
 
 # Define some weights for expectation calculation
 weights = np.array([1.0, 2.0, 3.0])  # Importance of categories
