@@ -1,4 +1,5 @@
 import numpy as np
+import pandas as pd
 
 class FairnessComputation:
     def __init__(self, num_seekers, num_categories):
@@ -71,17 +72,19 @@ class FairnessComputation:
                         expectation += weights[k]
             return expectation
 
-    # Example usage:
+def load_sensitive_values(file_path):
+    """
+    Load sensitive values from a CSV file.
+    """
+    return pd.read_csv(file_path, header=None).values
 
-num_seekers = 3
-num_categories = 3
+# Example usage:
 
-    # One-hot encoded sensitive values (SV) for job seekers (A, B, C)
-SV = np.array([
-        [1, 0, 0],  # Job Seeker A
-        [0, 1, 0],  # Job Seeker B
-        [0, 0, 1]   # Job Seeker C
-    ])
+# Load sensitive values from CSV file
+file_path = 'sensitve_values.csv'
+SV = load_sensitive_values(file_path)
+
+num_seekers, num_categories = SV.shape
 
     # Initialize fairness computation class
 fairness = FairnessComputation(num_seekers, num_categories)
